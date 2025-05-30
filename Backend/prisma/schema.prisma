@@ -1,0 +1,287 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Users {
+  id                   Int                  @id @default(autoincrement())
+  name                 String              
+  emailAddress         String               @unique 
+  phoneNumber          Int?                 
+  socialProvider       String?
+  socialProviderId     String?
+  createdAt            DateTime             @default(now()) @db.Timestamp(6)
+  updatedAt            DateTime             @updatedAt
+  isActive             Boolean              @default(true)
+  profilePicture       String?
+  lastLogin            DateTime?            @default(now())
+  password             String               @default("")
+  isAdmin              Boolean              @default(false) 
+  activities           Activities[]
+  activity_members     ActivityMember[]
+  group_memberships    GroupMember[]
+  GroupMessage         GroupMessage[]
+  recommendations      MLRecommendation[]
+  created_groups       Study_group[]        @relation("GroupCreator")
+  subtopic_completions SubtopicCompletion[]
+  activity_logs        UserActivityLog[]
+  preferences          UserPreference?
+
+  @@map("Users") // Ensures Prisma queries the "Users" table
+}
+model Activities {
+  created_at       DateTime         @default(now())
+  created_by       Int?
+  description      String
+  id               String           @id @default(uuid())
+  title            String
+  updated_at       DateTime         @updatedAt
+  user             Users?           @relation(fields: [created_by], references: [id])
+  activity_members ActivityMember[]
+  subtopics        Subtopics[]
+
+  @@map("activities_table")
+}
+
+model Subtopics {
+  id             String               @id @default(uuid())
+  title          String
+  content        String               
+  order          Int?
+  activity_id    String
+  created_at     DateTime             @default(now())
+  updated_at     DateTime             @updatedAt
+  quiz_questions QuizQuestion[]
+  completions    SubtopicCompletion[]
+  activity       Activities           @relation(fields: [activity_id], references: [id])
+
+  @@map("subtopics_table")
+}
+
+model ActivityMember {
+  activity_id String
+  user_id     Int
+  joined_at   DateTime   @default(now())
+  progress    Int        @default(0)
+  updated_at  DateTime   @updatedAt
+  activity    Activities @relation(fields: [activity_id], references: [id])
+  user        Users      @relation(fields: [user_id], references: [id])
+
+  @@id([activity_id, user_id])
+  @@map("activity_members_table")
+}
+
+model SubtopicCompletion {
+  id           Int       @id @default(autoincrement())
+  user_id      Int
+  subtopic_id  String
+  completed_at DateTime  @default(now())
+  subtopic     Subtopics @relation(fields: [subtopic_id], references: [id])
+  user         Users     @relation(fields: [user_id], references: [id])
+
+  @@unique([user_id, subtopic_id])
+  @@map("subtopic_completions_table")
+}
+
+model QuizQuestion {
+  id            String    @id @default(uuid())
+  question      String
+  choices       String[]
+  correctAnswer String
+  subtopic_id   String
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+  subtopic      Subtopics @relation(fields: [subtopic_id], references: [id])
+
+  @@map("quiz_questions_table")
+}
+
+model Study_group {
+  id          Int            @id @default(autoincrement())
+  name        String
+  description String?
+  created_at  DateTime       @default(now()) @db.Timestamp(6)
+  updated_at  DateTime       @default(now()) @db.Timestamp(6)
+  created_by  Int
+  members     GroupMember[]
+  messages    GroupMessage[]
+  creator     Users          @relation("GroupCreator", fields: [created_by], references: [id])
+
+  @@map("study_groups_table")
+}
+
+model GroupMember {
+  id        Int         @id @default(autoincrement())
+  user_id   Int
+  group_id  Int
+  joined_at DateTime    @default(now())
+  role      String      @default("member") @db.VarChar(20)
+  group     Study_group @relation(fields: [group_id], references: [id])
+  user      Users       @relation(fields: [user_id], references: [id])
+
+  @@unique([user_id, group_id])
+  @@map("group_members_table")
+}
+
+model GroupMessage {
+  id        Int         @id @default(autoincrement())
+  content   String
+  createdAt DateTime    @default(now()) @db.Timestamp(6)
+  userId    Int
+  groupId   Int
+  group     Study_group @relation(fields: [groupId], references: [id])
+  user      Users       @relation(fields: [userId], references: [id])
+
+  @@map("group_messages_table")
+}
+
+model Messagescheme {
+  groupid   Int      @id @default(autoincrement())
+  sender    String
+  message   String
+  timestamp DateTime
+
+  @@map("message_table")
+}
+
+model UserActivityLog {
+  id             Int       @id @default(autoincrement())
+  userId         Int
+  activityType   String
+  activityId     String?
+  subtopicId     String?
+  duration       Int?
+  completionRate Float?
+  score          Int?
+  startTime      DateTime  @default(now())
+  endTime        DateTime?
+  metadata       Json?
+  user           Users     @relation(fields: [userId], references: [id])
+
+  @@map("user_activity_logs")
+}
+
+model UserPreference {
+  id              Int      @id @default(autoincrement())
+  userId          Int      @unique
+  preferredTopics String[]
+  preferredTime   String?
+  learningStyle   String?
+  difficultyLevel String?
+  user            Users    @relation(fields: [userId], references: [id])
+
+  @@map("user_preferences")
+}
+
+model MLRecommendation {
+  id                 Int      @id @default(autoincrement())
+  userId             Int
+  activityId         String?
+  subtopicId         String?
+  recommendationType String
+  score              Float
+  reason             String?
+  createdAt          DateTime @default(now())
+  user               Users    @relation(fields: [userId], references: [id])
+
+  @@map("ml_recommendations")
+}
+
+model activities {
+  id               Int                @id @default(autoincrement())
+  title            String             @db.VarChar(255)
+  description      String?
+  duration         Int?
+  category         String?            @db.VarChar(50)
+  difficulty       String?            @db.VarChar(20)
+  created_by       Int?
+  created_at       DateTime?          @default(now()) @db.Timestamp(6)
+  updated_at       DateTime?          @default(now()) @db.Timestamp(6)
+  users            users?             @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  activity_members activity_members[]
+  activity_ratings activity_ratings[]
+}
+
+model activity_members {
+  id          Int         @id @default(autoincrement())
+  activity_id Int?
+  user_id     Int?
+  progress    Int?        @default(0)
+  joined_at   DateTime?   @default(now()) @db.Timestamp(6)
+  updated_at  DateTime?   @default(now()) @db.Timestamp(6)
+  activities  activities? @relation(fields: [activity_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users       users?      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([activity_id, user_id])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model activity_ratings {
+  id          Int         @id @default(autoincrement())
+  activity_id Int?
+  user_id     Int?
+  rating      Int?
+  comment     String?
+  created_at  DateTime?   @default(now()) @db.Timestamp(6)
+  activities  activities? @relation(fields: [activity_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users       users?      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([activity_id, user_id])
+}
+
+model group_members {
+  id        Int       @id @default(autoincrement())
+  group_id  Int?
+  user_id   Int?
+  role      String?   @default("member") @db.VarChar(20)
+  joined_at DateTime? @default(now()) @db.Timestamp(6)
+  groups    groups?   @relation(fields: [group_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users     users?    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([group_id, user_id])
+}
+
+model groups {
+  id            Int             @id @default(autoincrement())
+  name          String          @db.VarChar(255)
+  description   String?
+  created_by    Int?
+  created_at    DateTime?       @default(now()) @db.Timestamp(6)
+  updated_at    DateTime?       @default(now()) @db.Timestamp(6)
+  group_members group_members[]
+  users         users?          @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  messages      messages[]
+}
+
+model messages {
+  id         Int       @id @default(autoincrement())
+  group_id   Int?
+  user_id    Int?
+  content    String
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  groups     groups?   @relation(fields: [group_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users      users?    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model users {
+  id               Int                @id @default(autoincrement())
+  name             String             @db.VarChar(255)
+  emailaddress     String             @unique @db.VarChar(255) @map("emailaddress") @default("") // Provide a default value
+  phone            String?            @db.VarChar(20)
+  password         String             @db.VarChar(255)
+  profile_picture  String?            @db.VarChar(255)
+  isAdmin          Boolean?           @default(false)
+  created_at       DateTime?          @default(now()) @db.Timestamp(6)
+  activities       activities[]
+  activity_members activity_members[]
+  activity_ratings activity_ratings[]
+  group_members    group_members[]
+  groups           groups[]
+  messages         messages[]
+  @@map("users")
+}
+
