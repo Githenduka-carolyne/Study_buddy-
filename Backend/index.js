@@ -5,6 +5,7 @@ import { Server } from 'socket.io';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import serverless from 'serverless-http';
 import authRouter from './routes/auth.route.js';
 import activityRouter from './routes/activity.route.js';
 import hostRouter from './routes/host.route.js';
@@ -153,8 +154,13 @@ io.on("connection", (socket) => {
 });
 
 
-// Start server
-const PORT = process.env.PORT || 5001; 
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+// Export the app wrapped with serverless-http for Vercel deployment
+export default serverless(app);
+
+// For local development, start the server if not in serverless environment
+if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+  const PORT = process.env.PORT || 5001;
+  server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
