@@ -11,7 +11,7 @@ import { GoogleOAuthProvider } from "@react-oauth/google";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Layout from "./components/Layout";
-import Login from "./pages/login/login";
+import Login from "./pages/login/Login.jsx";
 import Signup from "./pages/signup/Signup";
 import Dashboard from "./pages/dashboard/dashboard";
 import Activities from "./pages/activities/activities";
