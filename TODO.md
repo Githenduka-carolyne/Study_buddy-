@@ -8,6 +8,8 @@
 - [x] Created vercel.json configuration file in root directory
 - [x] Installed dependencies with npm install
 - [x] Added conditional server startup for local development
+- [x] Updated Frontend API configuration to use relative paths in production
+- [x] Updated Vercel configuration to properly handle both frontend and backend
 
 ## Next Steps:
 - [ ] Deploy to Vercel and test the serverless function
